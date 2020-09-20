@@ -7,7 +7,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/sshh12/research/venmo"
+	"github.com/sshh12/venmo-research/venmo"
 )
 
 type workerTask struct {
@@ -31,7 +31,10 @@ func main() {
 	interval := flag.Int("interval_size", 10000, "number of ids per file")
 	flag.Parse()
 	if token == "" {
-		panic("token is required")
+		panic("Token is required")
+	}
+	if (*endID-*startID)%*interval != 0 {
+		panic("The range provided is not divisable by the interval")
 	}
 
 	client := venmo.NewClient(token)
@@ -52,9 +55,9 @@ func main() {
 
 func worker(client *venmo.Client, tasks <-chan workerTask, complete chan<- bool) {
 	for task := range tasks {
-		fmt.Printf("Worker Started [%d, %d)\n", task.Start, task.End)
+		fmt.Printf("Worker Started -- [%d, %d) -- shard(%d/%d)\n", task.Start, task.End, task.Shard, task.Shards)
 		downloadFeedRange(client, task.Start, task.End, task.Path, task.Shard, task.Shards)
-		fmt.Printf("Worker Finished [%d, %d)\n", task.Start, task.End)
+		fmt.Printf("Worker Finished -- [%d, %d) -- shard(%d/%d)\n", task.Start, task.End, task.Shard, task.Shards)
 	}
 	complete <- true
 }

@@ -106,12 +106,12 @@ func (client *Client) doRateLimitedRequest(method string, url string, respType i
 	if err != nil {
 		client.mux.Lock()
 		for err != nil {
-			fmt.Println("Rate limited, waiting.", err, url)
+			fmt.Print("Rate limited, waiting.", err, url)
 			time.Sleep(5 * time.Minute)
 			err = client.doRequest(method, url, respType)
 		}
 		client.mux.Unlock()
-		fmt.Println("Rate limited done.")
+		fmt.Println("...done.")
 	}
 	return nil
 }
