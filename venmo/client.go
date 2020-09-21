@@ -19,11 +19,12 @@ type Client struct {
 }
 
 type venmoFeed struct {
-	Data   []venmoFeedItem `json:"data"`
-	Paging venmoPaging     `json:"paging"`
+	Data   []FeedItem  `json:"data"`
+	Paging venmoPaging `json:"paging"`
 }
 
-type venmoFeedItem struct {
+// FeedItem is an item in a user's venmo feed
+type FeedItem struct {
 	PaymentID    int                `json:"payment_id"`
 	StoryID      string             `json:"story_id"`
 	Message      string             `json:"message"`
@@ -63,38 +64,40 @@ func NewClient(token string) *Client {
 }
 
 // FetchFeed gets the feed of a user
-func (client *Client) FetchFeed(userID int) ([]venmoFeedItem, error) {
+func (client *Client) FetchFeed(userID int) ([]FeedItem, error) {
 	var body venmoFeed
 	err := client.doRateLimitedRequest("GET", fmt.Sprintf("https://venmo.com/api/v5/users/%d/feed", userID), &body)
 	if err != nil {
 		return nil, err
 	}
 	items := body.Data
-	curURL := body.Paging.PrevURL
-	for curURL != "" {
-		var pageBody venmoFeed
-		err := client.doRateLimitedRequest("GET", curURL, &pageBody)
-		if err != nil {
-			return nil, err
+	if len(body.Data) != 0 {
+		curURL := body.Paging.PrevURL
+		for curURL != "" {
+			var pageBody venmoFeed
+			err := client.doRateLimitedRequest("GET", curURL, &pageBody)
+			if err != nil {
+				return nil, err
+			}
+			if len(pageBody.Data) == 0 {
+				break
+			}
+			items = append(items, pageBody.Data...)
+			curURL = pageBody.Paging.PrevURL
 		}
-		if len(pageBody.Data) == 0 {
-			break
+		curURL = body.Paging.NextURL
+		for curURL != "" {
+			var pageBody venmoFeed
+			err := client.doRateLimitedRequest("GET", curURL, &pageBody)
+			if err != nil {
+				return nil, err
+			}
+			if len(pageBody.Data) == 0 {
+				break
+			}
+			items = append(items, pageBody.Data...)
+			curURL = pageBody.Paging.NextURL
 		}
-		items = append(items, pageBody.Data...)
-		curURL = pageBody.Paging.PrevURL
-	}
-	curURL = body.Paging.NextURL
-	for curURL != "" {
-		var pageBody venmoFeed
-		err := client.doRateLimitedRequest("GET", curURL, &pageBody)
-		if err != nil {
-			return nil, err
-		}
-		if len(pageBody.Data) == 0 {
-			break
-		}
-		items = append(items, pageBody.Data...)
-		curURL = pageBody.Paging.NextURL
 	}
 	return items, nil
 }
