@@ -29,7 +29,7 @@ type FeedItem struct {
 	StoryID      string             `json:"story_id"`
 	Message      string             `json:"message"`
 	Type         string             `json:"type"`
-	Actor        venmoUser          `json:"actor"`
+	Actor        User               `json:"actor"`
 	Transactions []venmoTransaction `json:"transactions"`
 	Created      string             `json:"created_time"`
 	Updated      string             `json:"updated_time"`
@@ -44,7 +44,8 @@ type venmoTransaction struct {
 	Target interface{} `json:"target"`
 }
 
-type venmoUser struct {
+// User is a venmo user
+type User struct {
 	Username   string `json:"username"`
 	PictureURL string `json:"picture"`
 	Name       string `json:"name"`

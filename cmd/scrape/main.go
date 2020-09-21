@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"path"
 
@@ -30,11 +31,14 @@ func main() {
 	endID := flag.Int("end_id", 90000000, "venmo id to start from")
 	interval := flag.Int("interval_size", 10000, "number of ids per file")
 	flag.Parse()
+	os.Mkdir(savePath, 0755)
 	if token == "" {
-		panic("Token is required")
+		log.Fatal("Token is required")
+		return
 	}
 	if (*endID-*startID)%*interval != 0 {
-		panic("The range provided is not divisable by the interval")
+		log.Fatal("The range provided is not divisable by the interval")
+		return
 	}
 
 	client := venmo.NewClient(token)
@@ -55,9 +59,9 @@ func main() {
 
 func worker(client *venmo.Client, tasks <-chan workerTask, complete chan<- bool) {
 	for task := range tasks {
-		fmt.Printf("Worker Started -- [%d, %d) -- shard(%d/%d)\n", task.Start, task.End, task.Shard, task.Shards)
+		log.Printf("Worker Started -- [%d, %d) -- shard(%d/%d)\n", task.Start, task.End, task.Shard, task.Shards)
 		downloadFeedRange(client, task.Start, task.End, task.Path, task.Shard, task.Shards)
-		fmt.Printf("Worker Finished -- [%d, %d) -- shard(%d/%d)\n", task.Start, task.End, task.Shard, task.Shards)
+		log.Printf("Worker Finished -- [%d, %d) -- shard(%d/%d)\n", task.Start, task.End, task.Shard, task.Shards)
 	}
 	complete <- true
 }
@@ -75,13 +79,14 @@ func downloadFeedRange(client *venmo.Client, start int, end int, savePath string
 		}
 		feed, err := client.FetchFeed(i)
 		if err != nil {
-			fmt.Println("failed @", i)
+			log.Fatal("failed @", i)
 			panic(err)
 		}
 		for _, item := range feed {
 			encoded, _ := json.Marshal(item)
 			if _, err := fp.WriteString(string(encoded) + "\n"); err != nil {
-				panic(err)
+				log.Fatal(err)
+				return
 			}
 		}
 	}
