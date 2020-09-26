@@ -59,6 +59,7 @@ func main() {
 	for j := 0; j < workerCnt; j++ {
 		<-complete
 	}
+	store.Flush()
 }
 
 func worker(client *venmo.Client, tasks <-chan workerTask, complete chan<- bool) {

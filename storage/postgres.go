@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -20,27 +19,32 @@ func init() {
 type User struct {
 	ID           int
 	Transactions []Transaction `pg:"many2many:user_to_transactions"`
-	Username     string
-	PictureURL   string
-	Name         string
-	FirstName    string
-	LastName     string
-	Created      string
-	IsBusiness   bool
-	Cancelled    bool
-	ExternalID   string
+	Username     string        `pg:"type:'varchar'"`
+	PictureURL   string        `pg:"type:'varchar'"`
+	Name         string        `pg:"type:'varchar'"`
+	FirstName    string        `pg:"type:'varchar'"`
+	LastName     string        `pg:"type:'varchar'"`
+	Created      string        `pg:"type:'timestamp'"`
+	IsBusiness   bool          `pg:"type:'boolean',default:false"`
+	Cancelled    bool          `pg:"type:'boolean',default:false"`
+	ExternalID   string        `pg:"type:'varchar'"`
 }
 
 // Transaction is postgres transaction
 type Transaction struct {
-	ID  int
-	Msg string
+	ID      int
+	Message string `pg:"type:'varchar'"`
+	Story   string `pg:"type:'varchar'"`
+	Type    string `pg:"type:'varchar'"`
+	Created string `pg:"type:'timestamp'"`
+	Updated string `pg:"type:'timestamp'"`
 }
 
 // UserToTransaction is relation between users and transactions
 type UserToTransaction struct {
 	UserID        int
 	TransactionID int
+	IsActor       bool `pg:"type:'boolean'"`
 }
 
 // Store is a storage client
@@ -76,7 +80,7 @@ func NewPostgresStore() (*Store, error) {
 	if err := createTables(db); err != nil {
 		return nil, err
 	}
-	buf := make(chan interface{}, 1000)
+	buf := make(chan interface{}, 2000)
 	return &Store{db: db, buffer: buf}, nil
 }
 
@@ -113,12 +117,30 @@ func (store *Store) AddTransactions(item *venmo.FeedItem) error {
 			continue
 		}
 		userModel := convertVenmoUserToModel(user)
-		transModel := &Transaction{ID: item.PaymentID*10 + idx, Msg: item.Message}
+		customID := item.PaymentID*10 + idx
+		transModel := &Transaction{
+			ID:      customID,
+			Message: item.Message,
+			Story:   item.StoryID,
+			Type:    item.Type,
+			Created: item.Created,
+			Updated: item.Updated,
+		}
 		store.buffer <- userModel
 		store.buffer <- transModel
+		store.buffer <- &UserToTransaction{
+			UserID:        actorModel.ID,
+			TransactionID: customID,
+			IsActor:       true,
+		}
+		store.buffer <- &UserToTransaction{
+			UserID:        userModel.ID,
+			TransactionID: customID,
+			IsActor:       false,
+		}
 	}
 	store.mux.Lock()
-	if len(store.buffer) >= 500 {
+	if len(store.buffer) >= 1000 {
 		store.Flush()
 	}
 	store.mux.Unlock()
@@ -127,8 +149,8 @@ func (store *Store) AddTransactions(item *venmo.FeedItem) error {
 
 // Flush flushes the store buffer
 func (store *Store) Flush() error {
-	fmt.Println("flush")
 	len := len(store.buffer)
+	log.Printf("Flushing %d", len)
 	values := make([]interface{}, len)
 	for i := 0; i < len; i++ {
 		values[i] = <-store.buffer
