@@ -5,12 +5,10 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"path"
 	"path/filepath"
-	"strconv"
 
 	"github.com/sshh12/venmo-research/venmo"
 )
@@ -24,30 +22,25 @@ func main() {
 		log.Fatal("No files found")
 		return
 	}
-	users := make(map[int]bool)
 	i := 0
 	for _, fn := range files {
+		fmt.Println(fn)
 		file, err := os.Open(fn)
 		if err != nil {
 			log.Fatal(err)
 			continue
 		}
-		reader := bufio.NewReader(file)
+		scanner := bufio.NewScanner(file)
+		scanner.Split(bufio.ScanLines)
 		var item venmo.FeedItem
-		for {
-			line, err := reader.ReadString('\n')
-			if err != nil && err != io.EOF {
-				break
-			}
+		for scanner.Scan() {
+			line := scanner.Text()
 			if err := json.Unmarshal([]byte(line), &item); err != nil {
-				// log.Print(err)
+				log.Print(line)
 				continue
 			}
-			id, _ := strconv.Atoi(item.Actor.ID)
-			if !users[id] {
-				fmt.Println(item.Actor.ID, item.Actor.Username)
-				users[id] = true
-			}
+			// fmt.Println(item.Message)
+			// id, _ := strconv.Atoi(item.Actor.ID)
 
 			i++
 			if i%10000 == 0 {

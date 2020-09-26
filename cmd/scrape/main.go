@@ -1,13 +1,11 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
-	"fmt"
 	"log"
 	"os"
-	"path"
 
+	"github.com/sshh12/venmo-research/storage"
 	"github.com/sshh12/venmo-research/venmo"
 )
 
@@ -17,6 +15,7 @@ type workerTask struct {
 	Path   string
 	Shard  int
 	Shards int
+	Store  *storage.Store
 }
 
 func main() {
@@ -24,7 +23,6 @@ func main() {
 	var token string
 	var savePath string
 	flag.StringVar(&token, "token", "", "venmo token")
-	flag.StringVar(&savePath, "save_path", ".", "path to download to")
 	shardIdx := flag.Int("shard_idx", 0, "shard index")
 	shardCnt := flag.Int("shard_cnt", 1, "total shards")
 	startID := flag.Int("start_id", 0, "venmo id to start from")
@@ -41,6 +39,12 @@ func main() {
 		return
 	}
 
+	store, err := storage.NewPostgresStore()
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+
 	client := venmo.NewClient(token)
 	workerCnt := 5
 	tasks := make(chan workerTask)
@@ -49,7 +53,7 @@ func main() {
 		go worker(client, tasks, complete)
 	}
 	for i := *startID; i < *endID; i += *interval {
-		tasks <- workerTask{Start: i, End: i + *interval, Path: savePath, Shard: *shardIdx, Shards: *shardCnt}
+		tasks <- workerTask{Start: i, End: i + *interval, Path: savePath, Shard: *shardIdx, Shards: *shardCnt, Store: store}
 	}
 	close(tasks)
 	for j := 0; j < workerCnt; j++ {
@@ -60,19 +64,13 @@ func main() {
 func worker(client *venmo.Client, tasks <-chan workerTask, complete chan<- bool) {
 	for task := range tasks {
 		log.Printf("Worker Started -- [%d, %d) -- shard(%d/%d)\n", task.Start, task.End, task.Shard, task.Shards)
-		downloadFeedRange(client, task.Start, task.End, task.Path, task.Shard, task.Shards)
+		downloadFeedRange(client, task.Store, task.Start, task.End, task.Path, task.Shard, task.Shards)
 		log.Printf("Worker Finished -- [%d, %d) -- shard(%d/%d)\n", task.Start, task.End, task.Shard, task.Shards)
 	}
 	complete <- true
 }
 
-func downloadFeedRange(client *venmo.Client, start int, end int, savePath string, shard int, shards int) {
-	tempFn := path.Join(savePath, fmt.Sprintf("%d-%d.venmo-raw", start, end))
-	fp, err := os.Create(tempFn)
-	if err != nil {
-		panic(err)
-	}
-	defer fp.Close()
+func downloadFeedRange(client *venmo.Client, store *storage.Store, start int, end int, savePath string, shard int, shards int) {
 	for i := start; i < end; i++ {
 		if i%shards != shard {
 			continue
@@ -83,11 +81,7 @@ func downloadFeedRange(client *venmo.Client, start int, end int, savePath string
 			panic(err)
 		}
 		for _, item := range feed {
-			encoded, _ := json.Marshal(item)
-			if _, err := fp.WriteString(string(encoded) + "\n"); err != nil {
-				log.Fatal(err)
-				return
-			}
+			store.AddTransaction(&item)
 		}
 	}
 }
