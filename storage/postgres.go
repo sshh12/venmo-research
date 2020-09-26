@@ -2,6 +2,10 @@ package storage
 
 import (
 	"fmt"
+	"log"
+	"os"
+	"strconv"
+	"sync"
 
 	"github.com/go-pg/pg"
 	"github.com/go-pg/pg/orm"
@@ -16,11 +20,21 @@ func init() {
 type User struct {
 	ID           int
 	Transactions []Transaction `pg:"many2many:user_to_transactions"`
+	Username     string
+	PictureURL   string
+	Name         string
+	FirstName    string
+	LastName     string
+	Created      string
+	IsBusiness   bool
+	Cancelled    bool
+	ExternalID   string
 }
 
 // Transaction is postgres transaction
 type Transaction struct {
-	ID int
+	ID  int
+	Msg string
 }
 
 // UserToTransaction is relation between users and transactions
@@ -31,7 +45,9 @@ type UserToTransaction struct {
 
 // Store is a storage client
 type Store struct {
-	db *pg.DB
+	db     *pg.DB
+	buffer chan interface{}
+	mux    sync.Mutex
 }
 
 func createTables(db *pg.DB) error {
@@ -53,32 +69,75 @@ func createTables(db *pg.DB) error {
 func NewPostgresStore() (*Store, error) {
 	db := pg.Connect(&pg.Options{
 		User:     "postgres",
-		Password: "",
+		Password: os.Getenv("POSTGRES_PASS"),
 		Database: "venmo",
 	})
 	// defer db.Close()
 	if err := createTables(db); err != nil {
 		return nil, err
 	}
-	return &Store{db: db}, nil
-
-	// values := []interface{}{
-	// 	&User{Id: 1},
-	// 	&User{Id: 2},
-	// 	&Transaction{Id: 1},
-	// 	&UserToTransaction{UserId: 1, TransactionId: 1},
-	// 	&UserToTransaction{UserId: 1, TransactionId: 2},
-	// }
-	// for _, v := range values {
-	// 	_, err := db.Model(v).OnConflict("DO NOTHING").Insert()
-	// 	if err != nil {
-	// 		panic(err)
-	// 	}
-	// }
-	// fmt.Println("done")
+	buf := make(chan interface{}, 1000)
+	return &Store{db: db, buffer: buf}, nil
 }
 
-// AddTransaction adds a transaction to the db
-func (store *Store) AddTransaction(tran *venmo.FeedItem) {
-	fmt.Println(tran)
+func convertVenmoUserToModel(user *venmo.User) *User {
+	ID, _ := strconv.Atoi(user.ID)
+	return &User{
+		ID:         ID,
+		Username:   user.Username,
+		PictureURL: user.PictureURL,
+		Name:       user.Name,
+		FirstName:  user.FirstName,
+		LastName:   user.LastName,
+		Created:    user.Created,
+		IsBusiness: user.IsBusiness,
+		Cancelled:  user.Cancelled,
+		ExternalID: user.ExternalID,
+	}
+}
+
+// AddTransactions adds a transaction to the db
+func (store *Store) AddTransactions(item *venmo.FeedItem) error {
+	// fmt.Println(item.Message)
+	actorModel := convertVenmoUserToModel(&item.Actor)
+	// fmt.Println(item.Message, item.PaymentID, item.StoryID)
+	store.buffer <- actorModel
+	// fmt.Println(actorModel)
+	if len(item.Transactions) > 10 {
+		panic("Item has more than 10 transactions, oof")
+	}
+	for idx, trans := range item.Transactions {
+		user, err := venmo.CastTargetToUser(trans.Target)
+		if err != nil {
+			log.Println(trans, err)
+			continue
+		}
+		userModel := convertVenmoUserToModel(user)
+		transModel := &Transaction{ID: item.PaymentID*10 + idx, Msg: item.Message}
+		store.buffer <- userModel
+		store.buffer <- transModel
+	}
+	store.mux.Lock()
+	if len(store.buffer) >= 500 {
+		store.Flush()
+	}
+	store.mux.Unlock()
+	return nil
+}
+
+// Flush flushes the store buffer
+func (store *Store) Flush() error {
+	fmt.Println("flush")
+	len := len(store.buffer)
+	values := make([]interface{}, len)
+	for i := 0; i < len; i++ {
+		values[i] = <-store.buffer
+	}
+	for _, v := range values {
+		_, err := store.db.Model(v).OnConflict("DO NOTHING").Insert()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

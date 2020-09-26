@@ -53,9 +53,69 @@ type User struct {
 	LastName   string `json:"lastname"`
 	Created    string `json:"date_created"`
 	IsBusiness bool   `json:"is_business"`
-	Canceled   bool   `json:"cancelled"`
+	Cancelled  bool   `json:"cancelled"`
 	ID         string `json:"id"`
 	ExternalID string `json:"external_id"`
+}
+
+// CastTargetToUser attempts to convert interface to user
+func CastTargetToUser(data interface{}) (*User, error) {
+	user, ok := data.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("Could not cast to user")
+	}
+	userID, ok := user["id"].(string)
+	if !ok {
+		return nil, fmt.Errorf("Could not cast user ID field")
+	}
+	extID, ok := user["external_id"].(string)
+	if !ok {
+		return nil, fmt.Errorf("Could not cast ext ID field")
+	}
+	username, ok := user["username"].(string)
+	if !ok {
+		return nil, fmt.Errorf("Could not cast username field")
+	}
+	picURL, ok := user["picture"].(string)
+	if !ok {
+		return nil, fmt.Errorf("Could not cast username field")
+	}
+	name, ok := user["name"].(string)
+	if !ok {
+		return nil, fmt.Errorf("Could not cast name field")
+	}
+	firstname, ok := user["firstname"].(string)
+	if !ok {
+		return nil, fmt.Errorf("Could not cast firstname field")
+	}
+	lastname, ok := user["lastname"].(string)
+	if !ok {
+		return nil, fmt.Errorf("Could not cast lastname field")
+	}
+	created, ok := user["date_created"].(string)
+	if !ok {
+		created = ""
+	}
+	isBus, ok := user["is_business"].(bool)
+	if !ok {
+		isBus = false
+	}
+	cancelled, ok := user["cancelled"].(bool)
+	if !ok {
+		return nil, fmt.Errorf("Could not cast cancelled field")
+	}
+	return &User{
+		ID:         userID,
+		ExternalID: extID,
+		Username:   username,
+		PictureURL: picURL,
+		Name:       name,
+		FirstName:  firstname,
+		LastName:   lastname,
+		Created:    created,
+		IsBusiness: isBus,
+		Cancelled:  cancelled,
+	}, nil
 }
 
 // NewClient creates a venmo client

@@ -81,7 +81,9 @@ func downloadFeedRange(client *venmo.Client, store *storage.Store, start int, en
 			panic(err)
 		}
 		for _, item := range feed {
-			store.AddTransaction(&item)
+			if err := store.AddTransactions(&item); err != nil {
+				log.Println(err)
+			}
 		}
 	}
 }
