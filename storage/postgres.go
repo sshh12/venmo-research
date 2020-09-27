@@ -11,7 +11,7 @@ import (
 	"github.com/sshh12/venmo-research/venmo"
 )
 
-const flushThreshold = 1000
+const flushThreshold = 5000
 
 func init() {
 	orm.RegisterTable((*UserToTransaction)(nil))
@@ -153,7 +153,10 @@ func (store *Store) AddTransactions(item *venmo.FeedItem) error {
 	}
 	store.mux.Lock()
 	if len(store.buffer) >= flushThreshold {
-		store.Flush()
+		if err := store.Flush(); err != nil {
+			store.mux.Unlock()
+			return err
+		}
 	}
 	store.mux.Unlock()
 	return nil
