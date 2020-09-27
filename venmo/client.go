@@ -3,6 +3,7 @@ package venmo
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -170,12 +171,12 @@ func (client *Client) doRateLimitedRequest(method string, url string, respType i
 	if err != nil {
 		client.mux.Lock()
 		for err != nil {
-			fmt.Print("Rate limited, waiting.", err, url)
+			log.Println("Rate limited, waiting.", err, url)
 			time.Sleep(5 * time.Minute)
 			err = client.doRequest(method, url, respType)
 		}
 		client.mux.Unlock()
-		fmt.Println("...done.")
+		log.Println("...done.")
 	}
 	return nil
 }

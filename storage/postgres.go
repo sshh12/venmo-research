@@ -11,6 +11,8 @@ import (
 	"github.com/sshh12/venmo-research/venmo"
 )
 
+const flushThreshold = 1000
+
 func init() {
 	orm.RegisterTable((*UserToTransaction)(nil))
 }
@@ -32,12 +34,14 @@ type User struct {
 
 // Transaction is postgres transaction
 type Transaction struct {
-	ID      int
-	Message string `pg:"type:'varchar'"`
-	Story   string `pg:"type:'varchar'"`
-	Type    string `pg:"type:'varchar'"`
-	Created string `pg:"type:'timestamp'"`
-	Updated string `pg:"type:'timestamp'"`
+	ID          int
+	Message     string `pg:"type:'varchar'"`
+	Story       string `pg:"type:'varchar'"`
+	Type        string `pg:"type:'varchar'"`
+	Created     string `pg:"type:'timestamp'"`
+	Updated     string `pg:"type:'timestamp'"`
+	ActorUserID int
+	RecipientID int
 }
 
 // UserToTransaction is relation between users and transactions
@@ -69,18 +73,27 @@ func createTables(db *pg.DB) error {
 	return nil
 }
 
+func env(key string, defaultVal string) string {
+	val := os.Getenv(key)
+	if val != "" {
+		return val
+	}
+	return defaultVal
+}
+
 // NewPostgresStore creates a postgres client
 func NewPostgresStore() (*Store, error) {
 	db := pg.Connect(&pg.Options{
-		User:     "postgres",
-		Password: os.Getenv("POSTGRES_PASS"),
-		Database: "venmo",
+		User:     env("POSTGRES_USER", "postgres"),
+		Password: env("POSTGRES_PASS", "password"),
+		Addr:     env("POSTGRES_ADDR", "localhost:5432"),
+		Database: env("POSTGRES_DB", "venmo"),
 	})
 	// defer db.Close()
 	if err := createTables(db); err != nil {
 		return nil, err
 	}
-	buf := make(chan interface{}, 2000)
+	buf := make(chan interface{}, flushThreshold*10)
 	return &Store{db: db, buffer: buf}, nil
 }
 
@@ -102,11 +115,8 @@ func convertVenmoUserToModel(user *venmo.User) *User {
 
 // AddTransactions adds a transaction to the db
 func (store *Store) AddTransactions(item *venmo.FeedItem) error {
-	// fmt.Println(item.Message)
 	actorModel := convertVenmoUserToModel(&item.Actor)
-	// fmt.Println(item.Message, item.PaymentID, item.StoryID)
 	store.buffer <- actorModel
-	// fmt.Println(actorModel)
 	if len(item.Transactions) > 10 {
 		panic("Item has more than 10 transactions, oof")
 	}
@@ -119,12 +129,14 @@ func (store *Store) AddTransactions(item *venmo.FeedItem) error {
 		userModel := convertVenmoUserToModel(user)
 		customID := item.PaymentID*10 + idx
 		transModel := &Transaction{
-			ID:      customID,
-			Message: item.Message,
-			Story:   item.StoryID,
-			Type:    item.Type,
-			Created: item.Created,
-			Updated: item.Updated,
+			ID:          customID,
+			Message:     item.Message,
+			Story:       item.StoryID,
+			Type:        item.Type,
+			Created:     item.Created,
+			Updated:     item.Updated,
+			ActorUserID: actorModel.ID,
+			RecipientID: userModel.ID,
 		}
 		store.buffer <- userModel
 		store.buffer <- transModel
@@ -140,7 +152,7 @@ func (store *Store) AddTransactions(item *venmo.FeedItem) error {
 		}
 	}
 	store.mux.Lock()
-	if len(store.buffer) >= 1000 {
+	if len(store.buffer) >= flushThreshold {
 		store.Flush()
 	}
 	store.mux.Unlock()
@@ -149,17 +161,39 @@ func (store *Store) AddTransactions(item *venmo.FeedItem) error {
 
 // Flush flushes the store buffer
 func (store *Store) Flush() error {
-	len := len(store.buffer)
-	log.Printf("Flushing %d", len)
-	values := make([]interface{}, len)
-	for i := 0; i < len; i++ {
-		values[i] = <-store.buffer
-	}
-	for _, v := range values {
-		_, err := store.db.Model(v).OnConflict("DO NOTHING").Insert()
-		if err != nil {
-			return err
+	users := make([]User, 0)
+	transactions := make([]Transaction, 0)
+	relations := make([]UserToTransaction, 0)
+	loop := true
+	for loop {
+		select {
+		case item := <-store.buffer:
+			switch v := item.(type) {
+			case *User:
+				users = append(users, *v)
+			case *Transaction:
+				transactions = append(transactions, *v)
+			case *UserToTransaction:
+				relations = append(relations, *v)
+			default:
+				panic("Unknown model type")
+			}
+		default:
+			loop = false
 		}
+	}
+	log.Printf("Flushing %d users, %d transactions (%d)", len(users), len(transactions), len(relations))
+	_, err := store.db.Model(&users).OnConflict("DO NOTHING").Insert()
+	if err != nil {
+		return err
+	}
+	_, err = store.db.Model(&transactions).OnConflict("DO NOTHING").Insert()
+	if err != nil {
+		return err
+	}
+	_, err = store.db.Model(&relations).OnConflict("DO NOTHING").Insert()
+	if err != nil {
+		return err
 	}
 	return nil
 }

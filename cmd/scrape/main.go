@@ -15,7 +15,6 @@ type workerTask struct {
 	Path   string
 	Shard  int
 	Shards int
-	Store  *storage.Store
 }
 
 func main() {
@@ -25,14 +24,18 @@ func main() {
 	flag.StringVar(&token, "token", "", "venmo token")
 	shardIdx := flag.Int("shard_idx", 0, "shard index")
 	shardCnt := flag.Int("shard_cnt", 1, "total shards")
+	workerCnt := flag.Int("workers", 5, "parallel workers")
 	startID := flag.Int("start_id", 0, "venmo id to start from")
 	endID := flag.Int("end_id", 90000000, "venmo id to start from")
 	interval := flag.Int("interval_size", 10000, "number of ids per file")
 	flag.Parse()
 	os.Mkdir(savePath, 0755)
 	if token == "" {
-		log.Fatal("Token is required")
-		return
+		token = os.Getenv("VENMO_TOKEN")
+		if token == "" {
+			log.Fatal("Token is required")
+			return
+		}
 	}
 	if (*endID-*startID)%*interval != 0 {
 		log.Fatal("The range provided is not divisable by the interval")
@@ -46,26 +49,25 @@ func main() {
 	}
 
 	client := venmo.NewClient(token)
-	workerCnt := 5
 	tasks := make(chan workerTask)
 	complete := make(chan bool)
-	for j := 0; j < workerCnt; j++ {
-		go worker(client, tasks, complete)
+	for j := 0; j < *workerCnt; j++ {
+		go worker(client, store, tasks, complete)
 	}
 	for i := *startID; i < *endID; i += *interval {
-		tasks <- workerTask{Start: i, End: i + *interval, Path: savePath, Shard: *shardIdx, Shards: *shardCnt, Store: store}
+		tasks <- workerTask{Start: i, End: i + *interval, Path: savePath, Shard: *shardIdx, Shards: *shardCnt}
 	}
 	close(tasks)
-	for j := 0; j < workerCnt; j++ {
+	for j := 0; j < *workerCnt; j++ {
 		<-complete
 	}
 	store.Flush()
 }
 
-func worker(client *venmo.Client, tasks <-chan workerTask, complete chan<- bool) {
+func worker(client *venmo.Client, store *storage.Store, tasks <-chan workerTask, complete chan<- bool) {
 	for task := range tasks {
 		log.Printf("Worker Started -- [%d, %d) -- shard(%d/%d)\n", task.Start, task.End, task.Shard, task.Shards)
-		downloadFeedRange(client, task.Store, task.Start, task.End, task.Path, task.Shard, task.Shards)
+		downloadFeedRange(client, store, task.Start, task.End, task.Path, task.Shard, task.Shards)
 		log.Printf("Worker Finished -- [%d, %d) -- shard(%d/%d)\n", task.Start, task.End, task.Shard, task.Shards)
 	}
 	complete <- true
