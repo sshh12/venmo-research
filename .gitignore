@@ -19,3 +19,5 @@ scrape.bat
 scrape-venmo*
 dev.env.bat
 *-build.bat
+.ipynb_checkpoints
+*.data.csv
