@@ -13,9 +13,9 @@ const defaultUserAgent string = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) 
 
 // Client is an instance for webscraping venmo
 type Client struct {
+	Token      string
 	httpClient *http.Client
 	reqCnt     uint64
-	token      string
 	mux        sync.Mutex
 }
 
@@ -121,8 +121,15 @@ func CastTargetToUser(data interface{}) (*User, error) {
 
 // NewClient creates a venmo client
 func NewClient(token string) *Client {
-	client := &Client{token: token, httpClient: &http.Client{}}
+	client := &Client{Token: token, httpClient: &http.Client{}}
 	return client
+}
+
+// NewClientFromLogin creates a venmo client from a username (or email/phone) and password
+func NewClientFromLogin(user string, password string) *Client {
+	// TODO
+	// https://github.com/mmohades/Venmo/blob/9fdf5fdd106d35906729ffd69f424d3540bc81d2/venmo_api/apis/auth_api.py
+	return nil
 }
 
 // FetchFeed gets the feed of a user
@@ -184,7 +191,7 @@ func (client *Client) doRateLimitedRequest(method string, url string, respType i
 func (client *Client) doRequest(method string, url string, respType interface{}) error {
 	req, err := http.NewRequest(method, url, nil)
 	req.Header.Add("User-Agent", defaultUserAgent)
-	req.AddCookie(&http.Cookie{Name: "api_access_token", Value: client.token})
+	req.AddCookie(&http.Cookie{Name: "api_access_token", Value: client.Token})
 	if err != nil {
 		return err
 	}
