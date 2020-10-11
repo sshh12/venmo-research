@@ -1,7 +1,8 @@
 name: AutoRelease
 on:
   push:
-    branches: [master]
+    tags:
+      - "v*"
 jobs:
   releases-matrix:
     name: Release Go Binaries
