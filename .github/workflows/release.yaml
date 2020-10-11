@@ -19,7 +19,7 @@ jobs:
         run: |
           mkdir -p /home/runner/go/src/github.com/sshh12
           ln -s /home/runner/work/venmo-research/venmo-research /home/runner/go/src/github.com/sshh12/venmo-research
-          go get go.opentelemetry.io/otel
+          go get go.opentelemetry.io/otel/api/trace
           ls /home/runner/go/src/
           go get -v github.com/go-pg/pg
       - run: GOOS=${{ matrix.goos }} go build -o scrape-venmo -v ./cmd/scrape 
