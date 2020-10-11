@@ -1,17 +1,16 @@
 name: AutoRelease
-on:
-  push:
-    tags:
-      - "v*"
+on: 
+  release:
+    types: [created]
 jobs:
   releases-matrix:
     name: Release Go Binaries
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        goos: [windows]
+        goos: [windows, linux]
         goarch: [amd64]
-        project_path: ["./cmd/scrape"]
+        project_path: ["./cmd/scrape", "./cmd/tacc-ssh-tunnel"]
     steps:
       - uses: actions/checkout@v2
       - uses: wangyoucao577/go-release-action@master
