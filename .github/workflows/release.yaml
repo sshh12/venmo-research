@@ -10,15 +10,10 @@ jobs:
       matrix:
         goos: [windows]
         goarch: [amd64]
-        project_path: ["./cmd/scrape"]
     steps:
       - uses: actions/checkout@v2
-      - uses: wangyoucao577/go-release-action@master
+      - uses: actions/setup-go@v1
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          goos: ${{ matrix.goos }}
-          goarch: ${{ matrix.goarch }}
-          project_path: ${{ matrix.project_path }}
-          goversion: https://dl.google.com/go/go1.15.2.linux-amd64.tar.gz
-          pre_command: "go get -v ./..."
-          extra_files: LICENSE README.md
+          go-version: 1.15.2
+      - run: go build -o scrape-venmo -v ./cmd/scrape 
+      - run: ls
