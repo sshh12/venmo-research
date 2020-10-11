@@ -16,6 +16,6 @@ jobs:
         with:
           go-version: 1.15.2
       - run: |
+          mkdir -p /home/runner/go/src/github.com/sshh12
           ln -s /home/runner/work/venmo-research/venmo-research /home/runner/go/src/github.com/sshh12/venmo-research
-          ls /home/runner/go/src/github.com
       - run: go build -o scrape-venmo -v ./cmd/scrape 
