@@ -15,5 +15,7 @@ jobs:
       - uses: actions/setup-go@v1
         with:
           go-version: 1.15.2
+      - run: ls
+      - run: pwd
       - run: go build -o scrape-venmo -v ./cmd/scrape 
       - run: ls
