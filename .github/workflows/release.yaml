@@ -19,5 +19,5 @@ jobs:
           goos: ${{ matrix.goos }}
           goarch: ${{ matrix.goarch }}
           project_path: ${{ matrix.project_path }}
-          pre_command: "go get -v github.com/go-pg/pg github.com/sshh12/venmo-research/storage github.com/sshh12/venmo-research/venmo"
+          pre_command: "go get -v go.opentelemetry.io/otel/api/trace github.com/go-pg/pg github.com/sshh12/venmo-research/storage github.com/sshh12/venmo-research/venmo"
           extra_files: LICENSE README.md
