@@ -20,5 +20,5 @@ jobs:
           goarch: ${{ matrix.goarch }}
           project_path: ${{ matrix.project_path }}
           goversion: https://dl.google.com/go/go1.15.2.linux-amd64.tar.gz
-          pre_command: "go get github.com/sshh12/venmo-research"
+          pre_command: "go get -v ./..."
           extra_files: LICENSE README.md
