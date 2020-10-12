@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -199,4 +200,10 @@ func (store *Store) Flush() error {
 		return err
 	}
 	return nil
+}
+
+func (store *Store) SampleUsers(n int) ([]User, error) {
+	var users []User
+	_, err := store.db.Query(&users, fmt.Sprintf("SELECT * FROM users LIMIT %d", n))
+	return users, err
 }

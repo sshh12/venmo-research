@@ -22,3 +22,4 @@ dev.env.bat
 .ipynb_checkpoints
 *.data.csv
 *.expect
+debug.log
