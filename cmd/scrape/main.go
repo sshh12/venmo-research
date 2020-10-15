@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"log"
+	"math/rand"
 	"os"
 
 	"github.com/sshh12/venmo-research/storage"
@@ -12,27 +13,23 @@ import (
 type workerTask struct {
 	Start  int
 	End    int
-	Path   string
 	Shard  int
 	Shards int
 }
 
 func main() {
-
-	var token string
-	var savePath string
-	flag.StringVar(&token, "token", "", "venmo token")
+	token := flag.String("token", "", "venmo token")
 	shardIdx := flag.Int("shard_idx", 0, "shard index")
 	shardCnt := flag.Int("shard_cnt", 1, "total shards")
 	workerCnt := flag.Int("workers", 5, "parallel workers")
 	startID := flag.Int("start_id", 0, "venmo id to start from")
-	endID := flag.Int("end_id", 90000000, "venmo id to start from")
+	endID := flag.Int("end_id", 92000000, "venmo id to end at")
 	interval := flag.Int("interval_size", 10000, "number of ids per file")
+	randomMode := flag.Bool("random", false, "random mode, just fetch accounts at random (ignores interval and sharding)")
 	flag.Parse()
-	os.Mkdir(savePath, 0755)
-	if token == "" {
-		token = os.Getenv("VENMO_TOKEN")
-		if token == "" {
+	if *token == "" {
+		*token = os.Getenv("VENMO_TOKEN")
+		if *token == "" {
 			log.Fatal("Token is required")
 			return
 		}
@@ -48,32 +45,47 @@ func main() {
 		return
 	}
 
-	client := venmo.NewClient(token)
+	client := venmo.NewClient(*token)
 	tasks := make(chan workerTask)
 	complete := make(chan bool)
-	for j := 0; j < *workerCnt; j++ {
-		go worker(client, store, tasks, complete)
+	if !*randomMode {
+		for j := 0; j < *workerCnt; j++ {
+			go worker(client, store, tasks, complete)
+		}
+		for i := *startID; i < *endID; i += *interval {
+			tasks <- workerTask{Start: i, End: i + *interval, Shard: *shardIdx, Shards: *shardCnt}
+		}
+		close(tasks)
+	} else {
+		for j := 0; j < *workerCnt; j++ {
+			go randomWorker(client, store, *startID, *endID, complete)
+		}
 	}
-	for i := *startID; i < *endID; i += *interval {
-		tasks <- workerTask{Start: i, End: i + *interval, Path: savePath, Shard: *shardIdx, Shards: *shardCnt}
-	}
-	close(tasks)
 	for j := 0; j < *workerCnt; j++ {
 		<-complete
 	}
 	store.Flush()
 }
 
+func randomWorker(client *venmo.Client, store *storage.Store, start int, end int, complete chan<- bool) {
+	// run (end - start) number of times
+	for i := start; i < end; i++ {
+		randID := rand.Intn(end-start) + start
+		downloadFeedRange(client, store, randID, randID+1, 0, 1)
+	}
+	complete <- true
+}
+
 func worker(client *venmo.Client, store *storage.Store, tasks <-chan workerTask, complete chan<- bool) {
 	for task := range tasks {
 		log.Printf("Worker Started -- [%d, %d) -- shard(%d/%d)\n", task.Start, task.End, task.Shard, task.Shards)
-		downloadFeedRange(client, store, task.Start, task.End, task.Path, task.Shard, task.Shards)
+		downloadFeedRange(client, store, task.Start, task.End, task.Shard, task.Shards)
 		log.Printf("Worker Finished -- [%d, %d) -- shard(%d/%d)\n", task.Start, task.End, task.Shard, task.Shards)
 	}
 	complete <- true
 }
 
-func downloadFeedRange(client *venmo.Client, store *storage.Store, start int, end int, savePath string, shard int, shards int) {
+func downloadFeedRange(client *venmo.Client, store *storage.Store, start int, end int, shard int, shards int) {
 	for i := start; i < end; i++ {
 		if i%shards != shard {
 			continue
