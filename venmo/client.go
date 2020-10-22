@@ -200,6 +200,7 @@ func (client *Client) doRequest(method string, url string, respType interface{})
 		return err
 	}
 	defer resp.Body.Close()
+	//// Debug Requests
 	// temp, _ := ioutil.ReadAll(resp.Body)
 	// fmt.Println(string(temp))
 	if err := json.NewDecoder(resp.Body).Decode(&respType); err != nil {

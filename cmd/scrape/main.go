@@ -69,6 +69,7 @@ func main() {
 
 func randomWorker(client *venmo.Client, store *storage.Store, start int, end int, complete chan<- bool) {
 	// run (end - start) number of times
+	log.Printf("Random Worker Started -- [%d, %d)\n", start, end)
 	for i := start; i < end; i++ {
 		randID := rand.Intn(end-start) + start
 		downloadFeedRange(client, store, randID, randID+1, 0, 1)

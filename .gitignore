@@ -23,3 +23,6 @@ dev.env.bat
 *.data.csv
 *.expect
 debug.log
+venmo_test.py
+geonames_index/
+*.pkl
