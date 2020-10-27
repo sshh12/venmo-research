@@ -1,0 +1,13 @@
+#!/bin/bash
+#SBATCH -p normal
+#SBATCH -N 1
+#SBATCH -n 1
+#SBATCH -t 6:00:00
+#SBATCH -A UT-Austin-Computatio
+
+NODE_HOSTNAME=`hostname -s`
+EXTERNAL_IP=`curl -s http://whatismyip.akamai.com/`
+
+echo "Running $JOB_ID on node $NODE_HOSTNAME with IP $EXTERNAL_IP"
+
+VENMO_TOKEN=... POSTGRES_PASS=... POSTGRES_ADDR=...:5432 ./scrape-venmo -random

@@ -10,7 +10,7 @@ jobs:
       matrix:
         goos: [windows, linux]
         goarch: [amd64]
-        cmd: [scrape, tacc-ssh-tunnel]
+        cmd: [scrape-venmo, tacc-ssh-tunnel]
     steps:
       - uses: actions/checkout@v2
       - uses: wangyoucao577/go-release-action@master
