@@ -21,16 +21,17 @@ func init() {
 // User is a postgres user
 type User struct {
 	ID           int
-	Transactions []Transaction `pg:"many2many:user_to_transactions"`
-	Username     string        `pg:"type:'varchar'"`
-	PictureURL   string        `pg:"type:'varchar'"`
-	Name         string        `pg:"type:'varchar'"`
-	FirstName    string        `pg:"type:'varchar'"`
-	LastName     string        `pg:"type:'varchar'"`
-	Created      string        `pg:"type:'timestamp'"`
-	IsBusiness   bool          `pg:"type:'boolean',default:false"`
-	Cancelled    bool          `pg:"type:'boolean',default:false"`
-	ExternalID   string        `pg:"type:'varchar'"`
+	Transactions []Transaction          `pg:"many2many:user_to_transactions"`
+	Username     string                 `pg:"type:'varchar'"`
+	PictureURL   string                 `pg:"type:'varchar'"`
+	Name         string                 `pg:"type:'varchar'"`
+	FirstName    string                 `pg:"type:'varchar'"`
+	LastName     string                 `pg:"type:'varchar'"`
+	Created      string                 `pg:"type:'timestamp'"`
+	IsBusiness   bool                   `pg:"type:'boolean',default:false"`
+	Cancelled    bool                   `pg:"type:'boolean',default:false"`
+	ExternalID   string                 `pg:"type:'varchar'"`
+	BingResults  map[string]interface{} `pg:"type:'json'"`
 }
 
 // Transaction is postgres transaction
@@ -202,8 +203,18 @@ func (store *Store) Flush() error {
 	return nil
 }
 
-func (store *Store) SampleUsers(n int) ([]User, error) {
+// SampleUsersWithoutBingResults samples users
+func (store *Store) SampleUsersWithoutBingResults(n int) ([]User, error) {
 	var users []User
-	_, err := store.db.Query(&users, fmt.Sprintf("SELECT * FROM users LIMIT %d", n))
+	_, err := store.db.Query(&users, fmt.Sprintf("SELECT * FROM users WHERE bing_results is null ORDER BY RANDOM() LIMIT %d", n))
 	return users, err
+}
+
+// UpdateUser updates a user
+func (store *Store) UpdateUser(user *User) error {
+	_, err := store.db.Model(user).WherePK().Update()
+	if err != nil {
+		return err
+	}
+	return nil
 }
