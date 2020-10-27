@@ -11,10 +11,6 @@ import (
 	"github.com/sshh12/venmo-research/storage"
 )
 
-var defaultPicURLs = []string{
-	"https://s3.amazonaws.com/venmo/no-image.gif",
-}
-
 // RunGeoProfilesScraper scrapes geolocations
 func RunGeoProfilesScraper(store *storage.Store) {
 	go runBing(store)

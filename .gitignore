@@ -26,3 +26,4 @@ venmo_test.py
 geonames_index/
 *.pkl
 Temp.ipynb
+*.jar
