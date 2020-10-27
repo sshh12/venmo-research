@@ -21,17 +21,19 @@ func init() {
 // User is a postgres user
 type User struct {
 	ID           int
-	Transactions []Transaction          `pg:"many2many:user_to_transactions"`
-	Username     string                 `pg:"type:'varchar'"`
-	PictureURL   string                 `pg:"type:'varchar'"`
-	Name         string                 `pg:"type:'varchar'"`
-	FirstName    string                 `pg:"type:'varchar'"`
-	LastName     string                 `pg:"type:'varchar'"`
-	Created      string                 `pg:"type:'timestamp'"`
-	IsBusiness   bool                   `pg:"type:'boolean',default:false"`
-	Cancelled    bool                   `pg:"type:'boolean',default:false"`
-	ExternalID   string                 `pg:"type:'varchar'"`
-	BingResults  map[string]interface{} `pg:"type:'json'"`
+	Transactions []Transaction `pg:"many2many:user_to_transactions"`
+	Username     string        `pg:"type:'varchar'"`
+	PictureURL   string        `pg:"type:'varchar'"`
+	Name         string        `pg:"type:'varchar'"`
+	FirstName    string        `pg:"type:'varchar'"`
+	LastName     string        `pg:"type:'varchar'"`
+	Created      string        `pg:"type:'timestamp'"`
+	IsBusiness   bool          `pg:"type:'boolean',default:false"`
+	Cancelled    bool          `pg:"type:'boolean',default:false"`
+	ExternalID   string        `pg:"type:'varchar'"`
+
+	BingResults map[string]interface{} `pg:"type:'json'"`
+	DDGResults  string                 `pg:"type:'text'"`
 }
 
 // Transaction is postgres transaction
@@ -201,6 +203,13 @@ func (store *Store) Flush() error {
 		return err
 	}
 	return nil
+}
+
+// SampleUsersWithoutDDGResults samples users
+func (store *Store) SampleUsersWithoutDDGResults(n int) ([]User, error) {
+	var users []User
+	_, err := store.db.Query(&users, fmt.Sprintf("SELECT * FROM users WHERE ddg_results is null ORDER BY RANDOM() LIMIT %d", n))
+	return users, err
 }
 
 // SampleUsersWithoutBingResults samples users
