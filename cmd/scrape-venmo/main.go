@@ -21,6 +21,7 @@ func main() {
 	selPath := flag.String("sel_path", "selenium-server-standalone-3.141.59.jar", "Path to selenium server")
 	selDriver := flag.String("sel_driver", "C:\\Dev\\bin\\chromedriver.exe", "Path to selenium chrome driver")
 	selPort := flag.Int("sel_port", 8123, "Port for selenium server")
+	selHeadless := flag.Bool("sel_headless", true, "Run selenium with headless options")
 	fbUser := flag.String("fb_user", "", "Facebook username")
 	fbPass := flag.String("fb_pass", "", "Facebook password")
 	scrapeMode := flag.String("mode", "transactions", "What to scrape {transactions, geoprofiles, facebook}")
@@ -46,7 +47,7 @@ func main() {
 	} else if *scrapeMode == "geoprofiles" {
 		RunGeoProfilesScraper(store)
 	} else if *scrapeMode == "facebook" {
-		RunFacebookScraper(store, *selPath, *selDriver, *selPort, *fbUser, *fbPass)
+		RunFacebookScraper(store, *workerCnt, *selPath, *selDriver, *selPort, *selHeadless, *fbUser, *fbPass)
 	} else {
 		log.Fatal("Unknown scrape mode")
 	}

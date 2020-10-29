@@ -20,6 +20,10 @@ func init() {
 
 // User is a postgres user
 type User struct {
+	// Meta
+	tableName struct{} `pg:",discard_unknown_columns"`
+
+	// Venmo Fields
 	ID           int
 	Transactions []Transaction `pg:"many2many:user_to_transactions"`
 	Username     string        `pg:"type:'varchar'"`
@@ -32,8 +36,10 @@ type User struct {
 	Cancelled    bool          `pg:"type:'boolean',default:false"`
 	ExternalID   string        `pg:"type:'varchar'"`
 
-	BingResults map[string]interface{} `pg:"type:'json'"`
-	DDGResults  string                 `pg:"type:'text'"`
+	// Research Fields
+	BingResults     map[string]interface{} `pg:"type:'json'"`
+	DDGResults      string                 `pg:"type:'text'"`
+	FacebookResults map[string]interface{} `pg:"type:'json'"`
 }
 
 // Transaction is postgres transaction
@@ -216,6 +222,13 @@ func (store *Store) SampleUsersWithoutDDGResults(n int) ([]User, error) {
 func (store *Store) SampleUsersWithoutBingResults(n int) ([]User, error) {
 	var users []User
 	_, err := store.db.Query(&users, fmt.Sprintf("SELECT * FROM users WHERE bing_results is null ORDER BY RANDOM() LIMIT %d", n))
+	return users, err
+}
+
+// SampleUsersWithoutFacebookResults samples users
+func (store *Store) SampleUsersWithoutFacebookResults(n int) ([]User, error) {
+	var users []User
+	_, err := store.db.Query(&users, fmt.Sprintf("SELECT * FROM users WHERE facebook_results is null ORDER BY RANDOM() LIMIT %d", n))
 	return users, err
 }
 
