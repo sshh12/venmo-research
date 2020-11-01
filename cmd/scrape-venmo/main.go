@@ -21,7 +21,7 @@ func main() {
 	selPath := flag.String("sel_path", "selenium-server-standalone-3.141.59.jar", "Path to selenium server")
 	selDriver := flag.String("sel_driver", "C:\\Dev\\bin\\chromedriver.exe", "Path to selenium chrome driver")
 	selPort := flag.Int("sel_port", 8123, "Port for selenium server")
-	selHeadless := flag.Bool("sel_headless", true, "Run selenium with headless options")
+	selHeadless := flag.Bool("sel_headless", false, "Run selenium with headless option")
 	fbUser := flag.String("fb_user", "", "Facebook username")
 	fbPass := flag.String("fb_pass", "", "Facebook password")
 	scrapeMode := flag.String("mode", "transactions", "What to scrape {transactions, geoprofiles, facebook}")
@@ -35,10 +35,6 @@ func main() {
 
 	if *token == "" {
 		*token = os.Getenv("VENMO_TOKEN")
-		if *token == "" {
-			log.Fatal("Token is required")
-			return
-		}
 	}
 	client := venmo.NewClient(*token)
 
