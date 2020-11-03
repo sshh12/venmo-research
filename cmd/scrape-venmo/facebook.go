@@ -109,7 +109,7 @@ func searchFacebook(user *storage.User, wd selenium.WebDriver) error {
 	if err != nil {
 		return err
 	}
-	rg := regexp.MustCompile("href=\"(https:\\/\\/www.facebook.com[^\"]+?)\"><span>([^<]+?)<[\\s\\S]+?<img src=\"(\\/xti.php[^\"]+?)\"")
+	rg := regexp.MustCompile("href=\"(https:\\/\\/www.facebook.com\\/[^\"]+?)\" role=\"link\" tabindex=\"0\"><span>([ \\w]+?)<\\/span")
 	matches := rg.FindAllStringSubmatch(source, -1)
 	results := make([]map[string]string, 0)
 	for _, match := range matches {

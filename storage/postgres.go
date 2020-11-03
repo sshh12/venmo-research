@@ -228,7 +228,7 @@ func (store *Store) SampleUsersWithoutBingResults(n int) ([]User, error) {
 // SampleUsersWithoutFacebookResults samples users
 func (store *Store) SampleUsersWithoutFacebookResults(n int) ([]User, error) {
 	var users []User
-	_, err := store.db.Query(&users, fmt.Sprintf("SELECT * FROM users WHERE facebook_results is null ORDER BY RANDOM() LIMIT %d", n))
+	_, err := store.db.Query(&users, fmt.Sprintf("SELECT * FROM users WHERE facebook_results is null and picture_url LIKE '%%facebook=true' ORDER BY RANDOM() LIMIT %d", n))
 	return users, err
 }
 
