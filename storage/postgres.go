@@ -93,12 +93,14 @@ func env(key string, defaultVal string) string {
 
 // NewPostgresStore creates a postgres client
 func NewPostgresStore() (*Store, error) {
-	db := pg.Connect(&pg.Options{
+	opts := &pg.Options{
 		User:     env("POSTGRES_USER", "postgres"),
 		Password: env("POSTGRES_PASS", "password"),
 		Addr:     env("POSTGRES_ADDR", "localhost:5432"),
 		Database: env("POSTGRES_DB", "venmo"),
-	})
+	}
+	log.Print("Postgres Connected ", opts)
+	db := pg.Connect(opts)
 	// defer db.Close()
 	if err := createTables(db); err != nil {
 		return nil, err

@@ -37,6 +37,7 @@ func RunFacebookScraper(store *storage.Store, workerCnt int, selPath string, sel
 }
 
 func scrapeFacebook(store *storage.Store, selPort int, selHeadless bool, fbUser string, fbPass string, done chan<- error) {
+	log.Printf("Facebook worker started (%s)", fbUser)
 	caps := selenium.Capabilities{"browserName": "chrome"}
 	if selHeadless {
 		chrCaps := chrome.Capabilities{

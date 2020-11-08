@@ -27,3 +27,6 @@ geonames_index/
 *.pkl
 Temp.ipynb
 *.jar
+*.temp
+*.bat
+scrape-venmo
