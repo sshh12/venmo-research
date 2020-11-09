@@ -99,9 +99,8 @@ func NewPostgresStore() (*Store, error) {
 		Addr:     env("POSTGRES_ADDR", "localhost:5432"),
 		Database: env("POSTGRES_DB", "venmo"),
 	}
-	log.Print("Postgres Connected ", opts)
+	log.Printf("Connected to postgres://%s:%s@%s/%s", opts.User, opts.Password, opts.Addr, opts.Database)
 	db := pg.Connect(opts)
-	// defer db.Close()
 	if err := createTables(db); err != nil {
 		return nil, err
 	}

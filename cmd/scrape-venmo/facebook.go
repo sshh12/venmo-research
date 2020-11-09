@@ -13,12 +13,14 @@ import (
 )
 
 // RunFacebookScraper scrapes facebook
-func RunFacebookScraper(store *storage.Store, workerCnt int, selPath string, selDriver string, selPort int, selHeadless bool, fbUser string, fbPass string) {
+func RunFacebookScraper(store *storage.Store, workerCnt int, selPath string, selDriver string, selPort int, selHeadless bool, selXvfb bool, fbUser string, fbPass string) {
 
 	opts := []selenium.ServiceOption{
-		// selenium.StartFrameBuffer(),
 		selenium.ChromeDriver(selDriver),
 		selenium.Output(nil),
+	}
+	if selXvfb {
+		opts = append(opts, selenium.StartFrameBuffer())
 	}
 	service, err := selenium.NewSeleniumService(selPath, selPort, opts...)
 	if err != nil {
