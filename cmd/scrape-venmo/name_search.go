@@ -11,17 +11,20 @@ import (
 	"github.com/sshh12/venmo-research/storage"
 )
 
-// RunGeoProfilesScraper scrapes geolocations
-func RunGeoProfilesScraper(store *storage.Store) {
-	go runBing(store)
-	runDDG(store)
+// RunNameSearchScraper scrapes geolocations
+func RunNameSearchScraper(store *storage.Store) {
+	done := make(chan error, 2)
+	go runBing(store, done)
+	go runDDG(store, done)
+	log.Println(<-done)
+	log.Println(<-done)
 }
 
-func runBing(store *storage.Store) {
+func runBing(store *storage.Store, done chan<- error) {
 	for {
 		users, err := store.SampleUsersWithoutBingResults(1000)
 		if err != nil {
-			log.Print(err)
+			done <- err
 			return
 		}
 		for _, user := range users {
@@ -35,11 +38,11 @@ func runBing(store *storage.Store) {
 	}
 }
 
-func runDDG(store *storage.Store) {
+func runDDG(store *storage.Store, done chan<- error) {
 	for {
 		users, err := store.SampleUsersWithoutDDGResults(1000)
 		if err != nil {
-			log.Print(err)
+			done <- err
 			return
 		}
 		for _, user := range users {

@@ -25,7 +25,7 @@ func main() {
 	selXvfb := flag.Bool("sel_xvfb", false, "Run selenium with X virtual framebuffer")
 	fbUser := flag.String("fb_user", "", "Facebook username")
 	fbPass := flag.String("fb_pass", "", "Facebook password")
-	scrapeMode := flag.String("mode", "transactions", "What to scrape {transactions, geoprofiles, facebook, facebookpics}")
+	scrapeMode := flag.String("mode", "transactions", "What to scrape {transactions, namesearch, facebook, facebookpics}")
 	flag.Parse()
 
 	store, err := storage.NewPostgresStore()
@@ -41,8 +41,8 @@ func main() {
 
 	if *scrapeMode == "transactions" {
 		RunTransactionScraper(client, store, *randomMode, *workerCnt, *startID, *endID, *interval, *shardIdx, *shardCnt)
-	} else if *scrapeMode == "geoprofiles" {
-		RunGeoProfilesScraper(store)
+	} else if *scrapeMode == "namesearch" {
+		RunNameSearchScraper(store)
 	} else if *scrapeMode == "facebook" {
 		RunFacebookScraper(store, *workerCnt, *selPath, *selDriver, *selPort, *selHeadless, *selXvfb, *fbUser, *fbPass)
 	} else if *scrapeMode == "facebookpics" {
