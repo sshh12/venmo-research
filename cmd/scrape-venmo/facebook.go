@@ -38,6 +38,32 @@ func RunFacebookScraper(store *storage.Store, workerCnt int, selPath string, sel
 	}
 }
 
+func loginToFacebook(wd selenium.WebDriver, user string, password string) error {
+	if err := wd.Get("https://www.facebook.com/"); err != nil {
+		return err
+	}
+	time.Sleep(1 * time.Second)
+	userInput, err := wd.FindElement(selenium.ByXPATH, "/html/body/div[1]/div[2]/div[1]/div/div/div/div[2]/div/div[1]/form/div[1]/div[1]/input")
+	if err != nil {
+		return err
+	}
+	passwordInput, err := wd.FindElement(selenium.ByXPATH, "/html/body/div[1]/div[2]/div[1]/div/div/div/div[2]/div/div[1]/form/div[1]/div[2]/input")
+	if err != nil {
+		return err
+	}
+	loginBtn, err := wd.FindElement(selenium.ByXPATH, "/html/body/div[1]/div[2]/div[1]/div/div/div/div[2]/div/div[1]/form/div[2]/button")
+	if err != nil {
+		return err
+	}
+	userInput.Click()
+	userInput.SendKeys(user)
+	passwordInput.Click()
+	passwordInput.SendKeys(password)
+	loginBtn.Click()
+	time.Sleep(3 * time.Second)
+	return nil
+}
+
 func scrapeFacebook(store *storage.Store, selPort int, selHeadless bool, fbUser string, fbPass string, done chan<- error) {
 	log.Printf("Facebook worker started (%s)", fbUser)
 	caps := selenium.Capabilities{"browserName": "chrome"}
@@ -58,33 +84,10 @@ func scrapeFacebook(store *storage.Store, selPort int, selHeadless bool, fbUser 
 	}
 	defer wd.Quit()
 
-	if err := wd.Get("https://www.facebook.com/"); err != nil {
+	if err := loginToFacebook(wd, fbUser, fbPass); err != nil {
 		done <- err
 		return
 	}
-	time.Sleep(1 * time.Second)
-	userInput, err := wd.FindElement(selenium.ByXPATH, "/html/body/div[1]/div[2]/div[1]/div/div/div/div[2]/div/div[1]/form/div[1]/div[1]/input")
-	if err != nil {
-		done <- err
-		return
-	}
-	passwordInput, err := wd.FindElement(selenium.ByXPATH, "/html/body/div[1]/div[2]/div[1]/div/div/div/div[2]/div/div[1]/form/div[1]/div[2]/input")
-	if err != nil {
-		done <- err
-		return
-	}
-	loginBtn, err := wd.FindElement(selenium.ByXPATH, "/html/body/div[1]/div[2]/div[1]/div/div/div/div[2]/div/div[1]/form/div[2]/button")
-	if err != nil {
-		done <- err
-		return
-	}
-
-	userInput.Click()
-	userInput.SendKeys(fbUser)
-	passwordInput.Click()
-	passwordInput.SendKeys(fbPass)
-	loginBtn.Click()
-	time.Sleep(3 * time.Second)
 
 	for {
 		users, err := store.SampleUsersWithoutFacebookResults(1000)

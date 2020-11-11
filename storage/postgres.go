@@ -40,6 +40,7 @@ type User struct {
 	BingResults     map[string]interface{} `pg:"type:'json'"`
 	DDGResults      string                 `pg:"type:'text'"`
 	FacebookResults map[string]interface{} `pg:"type:'json'"`
+	FacebookProfile map[string]interface{} `pg:"type:'json'"`
 }
 
 // Transaction is postgres transaction
@@ -212,25 +213,30 @@ func (store *Store) Flush() error {
 	return nil
 }
 
+func (store *Store) sampleUsers(query string, n int) ([]User, error) {
+	var users []User
+	_, err := store.db.Query(&users, query+fmt.Sprintf(" ORDER BY RANDOM() LIMIT %d", n))
+	return users, err
+}
+
 // SampleUsersWithoutDDGResults samples users
 func (store *Store) SampleUsersWithoutDDGResults(n int) ([]User, error) {
-	var users []User
-	_, err := store.db.Query(&users, fmt.Sprintf("SELECT * FROM users WHERE ddg_results is null ORDER BY RANDOM() LIMIT %d", n))
-	return users, err
+	return store.sampleUsers("SELECT * FROM users WHERE ddg_results is null", n)
 }
 
 // SampleUsersWithoutBingResults samples users
 func (store *Store) SampleUsersWithoutBingResults(n int) ([]User, error) {
-	var users []User
-	_, err := store.db.Query(&users, fmt.Sprintf("SELECT * FROM users WHERE bing_results is null ORDER BY RANDOM() LIMIT %d", n))
-	return users, err
+	return store.sampleUsers("SELECT * FROM users WHERE bing_results is null", n)
 }
 
 // SampleUsersWithoutFacebookResults samples users
 func (store *Store) SampleUsersWithoutFacebookResults(n int) ([]User, error) {
-	var users []User
-	_, err := store.db.Query(&users, fmt.Sprintf("SELECT * FROM users WHERE facebook_results is null and picture_url LIKE '%%facebook=true' ORDER BY RANDOM() LIMIT %d", n))
-	return users, err
+	return store.sampleUsers("SELECT * FROM users WHERE facebook_results is null and picture_url LIKE '%%facebook=true'", n)
+}
+
+// SampleUsersWithFacebookResults samples users
+func (store *Store) SampleUsersWithFacebookResults(n int) ([]User, error) {
+	return store.sampleUsers("SELECT * FROM users WHERE facebook_results is not null and picture_url LIKE '%%facebook=true'", n)
 }
 
 // UpdateUser updates a user
