@@ -42,7 +42,7 @@ func main() {
 	if *scrapeMode == "transactions" {
 		RunTransactionScraper(client, store, *randomMode, *workerCnt, *startID, *endID, *interval, *shardIdx, *shardCnt)
 	} else if *scrapeMode == "namesearch" {
-		RunNameSearchScraper(store)
+		RunNameSearchScraper(store, *workerCnt)
 	} else if *scrapeMode == "facebook" {
 		RunFacebookScraper(store, *workerCnt, *selPath, *selDriver, *selPort, *selHeadless, *selXvfb, *fbUser, *fbPass)
 	} else if *scrapeMode == "facebookpics" {

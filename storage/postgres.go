@@ -41,6 +41,7 @@ type User struct {
 	DDGResults      string                 `pg:"type:'text'"`
 	FacebookResults map[string]interface{} `pg:"type:'json'"`
 	FacebookProfile map[string]interface{} `pg:"type:'json'"`
+	PeekYouResults  map[string]interface{} `pg:"type:'json'"`
 }
 
 // Transaction is postgres transaction
@@ -232,6 +233,11 @@ func (store *Store) SampleUsersWithoutBingResults(n int) ([]User, error) {
 // SampleUsersWithoutFacebookResults samples users
 func (store *Store) SampleUsersWithoutFacebookResults(n int) ([]User, error) {
 	return store.sampleUsers("SELECT * FROM users WHERE facebook_results is null and picture_url LIKE '%%facebook=true'", n)
+}
+
+// SampleUsersWithoutPeekYouResults samples users
+func (store *Store) SampleUsersWithoutPeekYouResults(n int) ([]User, error) {
+	return store.sampleUsers("SELECT * FROM users WHERE peek_you_results is null and picture_url LIKE '%%facebook=true'", n)
 }
 
 // SampleUsersWithFacebookResults samples users
