@@ -101,11 +101,11 @@ func NewPostgresStore() (*Store, error) {
 		Addr:     env("POSTGRES_ADDR", "localhost:5432"),
 		Database: env("POSTGRES_DB", "venmo"),
 	}
-	log.Printf("Connected to postgres://%s:%s@%s/%s", opts.User, opts.Password, opts.Addr, opts.Database)
 	db := pg.Connect(opts)
 	if err := createTables(db); err != nil {
 		return nil, err
 	}
+	log.Printf("Connected to postgres://%s:%s@%s/%s", opts.User, opts.Password, opts.Addr, opts.Database)
 	buf := make(chan interface{}, flushThreshold*10)
 	return &Store{db: db, buffer: buf}, nil
 }
@@ -240,9 +240,14 @@ func (store *Store) SampleUsersWithoutPeekYouResults(n int) ([]User, error) {
 	return store.sampleUsers("SELECT * FROM users WHERE peek_you_results is null and picture_url LIKE '%%facebook=true'", n)
 }
 
-// SampleUsersWithFacebookResults samples users
-func (store *Store) SampleUsersWithFacebookResults(n int) ([]User, error) {
-	return store.sampleUsers("SELECT * FROM users WHERE facebook_results is not null and picture_url LIKE '%%facebook=true'", n)
+// SampleUsersWithFacebookResultsWithoutProfile samples users
+func (store *Store) SampleUsersWithFacebookResultsWithoutProfile(n int) ([]User, error) {
+	return store.sampleUsers("SELECT * FROM users WHERE facebook_results is not null and picture_url LIKE '%%facebook=true' and facebook_profile is null", n)
+}
+
+// SampleUsersWithPeekYouMatchWithoutProfile samples users
+func (store *Store) SampleUsersWithPeekYouMatchWithoutProfile(n int) ([]User, error) {
+	return store.sampleUsers("SELECT * FROM users WHERE peek_you_results is not null and (peek_you_results ->> 'ResultsMatch') != '[]' and facebook_profile is null", n)
 }
 
 // UpdateUser updates a user

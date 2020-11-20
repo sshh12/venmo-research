@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/sshh12/venmo-research/images"
 	"github.com/sshh12/venmo-research/storage"
 )
 
@@ -151,7 +152,7 @@ func ddgLookup(user *storage.User) error {
 func peekYouLookup(user *storage.User) error {
 	client := &http.Client{}
 
-	venmoPic, err := downloadJPG(user.PictureURL)
+	venmoPic, err := images.DownloadJPG(user.PictureURL)
 	if err != nil {
 		return err
 	}
@@ -240,8 +241,8 @@ func peekYouLookup(user *storage.User) error {
 		for _, profileMatch := range profileMatches {
 			profileURL := profileMatch[1]
 			picURL := fmt.Sprintf("https://pkimgcdn.peekyou.com/%s.jpeg", profileMatch[2])
-			pic, err := downloadJPG(picURL)
-			if err == nil && imgSim(venmoPic, pic) {
+			pic, err := images.DownloadJPG(picURL)
+			if err == nil && images.IsSameImage(venmoPic, pic) {
 				profilesMatch = append(profilesMatch, []string{source, profileURL})
 				log.Printf("Match Found! %s %s", picURL, user.PictureURL)
 			} else {

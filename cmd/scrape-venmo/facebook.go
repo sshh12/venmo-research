@@ -3,10 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
-	"regexp"
-	"strings"
 	"time"
 
+	"github.com/sshh12/venmo-research/facebook"
 	"github.com/sshh12/venmo-research/storage"
 	"github.com/tebeka/selenium"
 	"github.com/tebeka/selenium/chrome"
@@ -38,32 +37,6 @@ func RunFacebookScraper(store *storage.Store, workerCnt int, selPath string, sel
 	}
 }
 
-func loginToFacebook(wd selenium.WebDriver, user string, password string) error {
-	if err := wd.Get("https://www.facebook.com/"); err != nil {
-		return err
-	}
-	time.Sleep(1 * time.Second)
-	userInput, err := wd.FindElement(selenium.ByXPATH, "/html/body/div[1]/div[2]/div[1]/div/div/div/div[2]/div/div[1]/form/div[1]/div[1]/input")
-	if err != nil {
-		return err
-	}
-	passwordInput, err := wd.FindElement(selenium.ByXPATH, "/html/body/div[1]/div[2]/div[1]/div/div/div/div[2]/div/div[1]/form/div[1]/div[2]/input")
-	if err != nil {
-		return err
-	}
-	loginBtn, err := wd.FindElement(selenium.ByXPATH, "/html/body/div[1]/div[2]/div[1]/div/div/div/div[2]/div/div[1]/form/div[2]/button")
-	if err != nil {
-		return err
-	}
-	userInput.Click()
-	userInput.SendKeys(user)
-	passwordInput.Click()
-	passwordInput.SendKeys(password)
-	loginBtn.Click()
-	time.Sleep(3 * time.Second)
-	return nil
-}
-
 func scrapeFacebook(store *storage.Store, selPort int, selHeadless bool, fbUser string, fbPass string, done chan<- error) {
 	log.Printf("Facebook worker started (%s)", fbUser)
 	caps := selenium.Capabilities{"browserName": "chrome"}
@@ -84,19 +57,23 @@ func scrapeFacebook(store *storage.Store, selPort int, selHeadless bool, fbUser 
 	}
 	defer wd.Quit()
 
-	if err := loginToFacebook(wd, fbUser, fbPass); err != nil {
+	if err := facebook.LoginToFacebook(wd, fbUser, fbPass); err != nil {
 		done <- err
 		return
 	}
 
 	for {
-		users, err := store.SampleUsersWithoutFacebookResults(1000)
+		users, err := store.SampleUsersWithoutFacebookResults(500)
 		if err != nil {
 			done <- err
 			return
 		}
+		if len(users) == 0 {
+			time.Sleep(300 * time.Second)
+			continue
+		}
 		for _, user := range users {
-			if err := searchFacebook(&user, wd); err != nil {
+			if err := findOnFacebook(&user, wd); err != nil {
 				log.Print(err)
 			} else {
 				store.UpdateUser(&user)
@@ -105,33 +82,24 @@ func scrapeFacebook(store *storage.Store, selPort int, selHeadless bool, fbUser 
 	}
 }
 
-func searchFacebook(user *storage.User, wd selenium.WebDriver) error {
-	searchURL := fmt.Sprintf("https://www.facebook.com/search/people/?q=%s", strings.ReplaceAll(user.Name, " ", "%20"))
-	if err := wd.Get(searchURL); err != nil {
-		return err
-	}
-	time.Sleep(3 * time.Second)
-	source, err := wd.PageSource()
+func findOnFacebook(user *storage.User, wd selenium.WebDriver) error {
+	results, err := facebook.SearchPeople(wd, user.Name)
 	if err != nil {
 		return err
 	}
-	rg := regexp.MustCompile("href=\"(https:\\/\\/www.facebook.com\\/[^\"]+?)\" role=\"link\" tabindex=\"0\"><span>([ \\w]+?)<\\/span")
-	matches := rg.FindAllStringSubmatch(source, -1)
-	results := make([]map[string]string, 0)
-	for _, match := range matches {
-		profileURL := strings.ReplaceAll(strings.ReplaceAll(match[1], "&amp;ref=br_rs", ""), "?ref=br_rs", "")
-		name := match[2]
-		results = append(results, map[string]string{
-			"url":  profileURL,
-			"name": name,
-		})
-		log.Print(profileURL, " ", name)
-	}
+	data := make([]map[string]string, 0)
 	if len(results) == 0 {
 		return fmt.Errorf("no results found")
 	}
+	for _, result := range results {
+		log.Print(result.URL, " ", result.Name)
+		data = append(data, map[string]string{
+			"url":  result.URL,
+			"name": result.Name,
+		})
+	}
 	user.FacebookResults = map[string]interface{}{
-		"results": results,
+		"results": data,
 	}
 	return nil
 }
