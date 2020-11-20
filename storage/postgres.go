@@ -18,51 +18,6 @@ func init() {
 	orm.RegisterTable((*UserToTransaction)(nil))
 }
 
-// User is a postgres user
-type User struct {
-	// Meta
-	tableName struct{} `pg:",discard_unknown_columns"`
-
-	// Venmo Fields
-	ID           int
-	Transactions []Transaction `pg:"many2many:user_to_transactions"`
-	Username     string        `pg:"type:'varchar'"`
-	PictureURL   string        `pg:"type:'varchar'"`
-	Name         string        `pg:"type:'varchar'"`
-	FirstName    string        `pg:"type:'varchar'"`
-	LastName     string        `pg:"type:'varchar'"`
-	Created      string        `pg:"type:'timestamp'"`
-	IsBusiness   bool          `pg:"type:'boolean',default:false"`
-	Cancelled    bool          `pg:"type:'boolean',default:false"`
-	ExternalID   string        `pg:"type:'varchar'"`
-
-	// Research Fields
-	BingResults     map[string]interface{} `pg:"type:'json'"`
-	DDGResults      string                 `pg:"type:'text'"`
-	FacebookResults map[string]interface{} `pg:"type:'json'"`
-	FacebookProfile map[string]interface{} `pg:"type:'json'"`
-	PeekYouResults  map[string]interface{} `pg:"type:'json'"`
-}
-
-// Transaction is postgres transaction
-type Transaction struct {
-	ID          int
-	Message     string `pg:"type:'varchar'"`
-	Story       string `pg:"type:'varchar'"`
-	Type        string `pg:"type:'varchar'"`
-	Created     string `pg:"type:'timestamp'"`
-	Updated     string `pg:"type:'timestamp'"`
-	ActorUserID int
-	RecipientID int
-}
-
-// UserToTransaction is relation between users and transactions
-type UserToTransaction struct {
-	UserID        int
-	TransactionID int
-	IsActor       bool `pg:"type:'boolean'"`
-}
-
 // Store is a storage client
 type Store struct {
 	db     *pg.DB
@@ -218,36 +173,6 @@ func (store *Store) sampleUsers(query string, n int) ([]User, error) {
 	var users []User
 	_, err := store.db.Query(&users, query+fmt.Sprintf(" ORDER BY RANDOM() LIMIT %d", n))
 	return users, err
-}
-
-// SampleUsersWithoutDDGResults samples users
-func (store *Store) SampleUsersWithoutDDGResults(n int) ([]User, error) {
-	return store.sampleUsers("SELECT * FROM users WHERE ddg_results is null", n)
-}
-
-// SampleUsersWithoutBingResults samples users
-func (store *Store) SampleUsersWithoutBingResults(n int) ([]User, error) {
-	return store.sampleUsers("SELECT * FROM users WHERE bing_results is null", n)
-}
-
-// SampleUsersWithoutFacebookResults samples users
-func (store *Store) SampleUsersWithoutFacebookResults(n int) ([]User, error) {
-	return store.sampleUsers("SELECT * FROM users WHERE facebook_results is null and picture_url LIKE '%%facebook=true'", n)
-}
-
-// SampleUsersWithoutPeekYouResults samples users
-func (store *Store) SampleUsersWithoutPeekYouResults(n int) ([]User, error) {
-	return store.sampleUsers("SELECT * FROM users WHERE peek_you_results is null and picture_url LIKE '%%facebook=true'", n)
-}
-
-// SampleUsersWithFacebookResultsWithoutProfile samples users
-func (store *Store) SampleUsersWithFacebookResultsWithoutProfile(n int) ([]User, error) {
-	return store.sampleUsers("SELECT * FROM users WHERE facebook_results is not null and picture_url LIKE '%%facebook=true' and facebook_profile is null", n)
-}
-
-// SampleUsersWithPeekYouMatchWithoutProfile samples users
-func (store *Store) SampleUsersWithPeekYouMatchWithoutProfile(n int) ([]User, error) {
-	return store.sampleUsers("SELECT * FROM users WHERE peek_you_results is not null and (peek_you_results ->> 'ResultsMatch') != '[]' and facebook_profile is null", n)
 }
 
 // UpdateUser updates a user
