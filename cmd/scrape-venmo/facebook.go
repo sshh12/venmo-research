@@ -89,7 +89,7 @@ func findOnFacebook(user *storage.User, wd selenium.WebDriver) error {
 	}
 	data := make([]map[string]string, 0)
 	if len(results) == 0 {
-		return fmt.Errorf("no results found")
+		return fmt.Errorf("facebook: no search results found")
 	}
 	for _, result := range results {
 		log.Print(result.URL, " ", result.Name)

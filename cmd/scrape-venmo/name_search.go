@@ -116,7 +116,7 @@ func bingLookup(user *storage.User) error {
 		results = append(results, match[1:])
 	}
 	if len(results) == 0 {
-		return fmt.Errorf("bing results empty")
+		return fmt.Errorf("bing: results empty")
 	}
 	user.BingResults = map[string]interface{}{
 		"results": results,
@@ -143,7 +143,7 @@ func ddgLookup(user *storage.User) error {
 	}
 	splits := strings.Split(string(body), "DDG.Data.languages.resultLanguages")
 	if len(splits) != 2 {
-		return fmt.Errorf("Weird DDG resp")
+		return fmt.Errorf("ddg: weird resp")
 	}
 	user.DDGResults = strings.TrimSpace(splits[1])
 	return nil
@@ -176,21 +176,21 @@ func peekYouLookup(user *storage.User) error {
 	md5RE := regexp.MustCompile("MD5 = \"(\\w+)\"")
 	md5Match := md5RE.FindStringSubmatch(string(indexBody))
 	if len(md5Match) == 0 {
-		return fmt.Errorf("peekyou md5 not found")
+		return fmt.Errorf("peekyou: md5 not found")
 	}
 	md5 := md5Match[1]
 
 	serRE := regexp.MustCompile("serialized =\"([^\"]+)\"")
 	serMatch := serRE.FindStringSubmatch(string(indexBody))
 	if len(serMatch) == 0 {
-		return fmt.Errorf("peekyou serialized not found")
+		return fmt.Errorf("peekyou: serialized not found")
 	}
 	ser := serMatch[1]
 
 	webRE := regexp.MustCompile("web_results_search =\"([^\"]+)\"")
 	webMatch := webRE.FindStringSubmatch(string(indexBody))
 	if len(webMatch) == 0 {
-		return fmt.Errorf("peekyou web_results_search not found")
+		return fmt.Errorf("peekyou: web_results_search not found")
 	}
 	web := webMatch[1]
 
@@ -233,7 +233,7 @@ func peekYouLookup(user *storage.User) error {
 		}
 		sourceHTML, err := base64.StdEncoding.DecodeString(sourceData.Data)
 		if err != nil {
-			log.Println("peekyou b64decode", err)
+			log.Println("peekyou: b64decode", err)
 			continue
 		}
 		profileRE := regexp.MustCompile("href=\"([^\"]+?)\"[ targe=\"_blnkofwCicjvsp:T\\.P(\\'\\/u);\">?]+\\s+<img title=\"[\\w \\-\\.]+\"class=\"blur\" id=\"(\\w+)_src\"")
@@ -252,7 +252,7 @@ func peekYouLookup(user *storage.User) error {
 	}
 
 	if len(profilesMatch) == 0 && len(profilesUnkMatch) == 0 {
-		return fmt.Errorf("peekyou no results found")
+		return fmt.Errorf("peekyou: no results found")
 	}
 
 	user.PeekYouResults = map[string]interface{}{

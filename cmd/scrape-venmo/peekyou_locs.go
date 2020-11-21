@@ -87,7 +87,11 @@ func scrapePeekYouFacebook(store *storage.Store, selPort int, selHeadless bool, 
 			}
 			profile, err := facebook.ExtractProfileData(wd, facebookURL)
 			if err != nil {
-				log.Println(facebookURL, err)
+				log.Println("facebook: ", facebookURL, err)
+				continue
+			}
+			if len(profile.InfoList) == 0 {
+				log.Println("facebook: no profile data found")
 				continue
 			}
 			log.Println(user.Name, user.Username, profile.InfoList)
