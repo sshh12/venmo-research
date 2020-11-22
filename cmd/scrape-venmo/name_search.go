@@ -94,7 +94,7 @@ func runPeekYou(store *storage.Store, done chan<- error) {
 
 func bingLookup(user *storage.User) error {
 	client := &http.Client{}
-	url := fmt.Sprintf("https://www.bing.com/search?q=%s", strings.ReplaceAll(user.Name, " ", "+"))
+	url := fmt.Sprintf("https://www.bing.com/search?q=%s", strings.ReplaceAll(strings.ReplaceAll(user.Name, "\t", ""), " ", "+"))
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return err

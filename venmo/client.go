@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-const defaultUserAgent string = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.47 Safari/537.36"
+const defaultUserAgent string = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.66 Safari/537.36"
 
 // Client is an instance for webscraping venmo
 type Client struct {
@@ -168,6 +168,17 @@ func (client *Client) FetchFeed(userID int) ([]FeedItem, error) {
 			curURL = pageBody.Paging.NextURL
 		}
 	}
+	return items, nil
+}
+
+// FetchPublic gets random transactions
+func (client *Client) FetchPublic(limit int) ([]FeedItem, error) {
+	var body venmoFeed
+	err := client.doRateLimitedRequest("GET", fmt.Sprintf("https://venmo.com/api/v5/public?limit=%d", limit), &body)
+	if err != nil {
+		return nil, err
+	}
+	items := body.Data
 	return items, nil
 }
 
