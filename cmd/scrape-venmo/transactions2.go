@@ -26,8 +26,8 @@ func randomWorker2(client *venmo.Client, store *storage.Store, complete chan<- b
 		}
 		if overlap == len(feed) {
 			store.Flush()
-			log.Println("All transactions already found...waiting")
-			time.Sleep(300 * time.Second)
+			log.Println("randomWorker2: all transactions already found...waiting")
+			time.Sleep(500 * time.Second)
 		} else {
 			for _, item := range feed {
 				if err := store.AddTransactions(&item); err != nil {
