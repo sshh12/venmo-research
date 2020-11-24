@@ -19,7 +19,7 @@ scrape.bat
 dev.env.bat
 *-build.bat
 .ipynb_checkpoints
-*.data.csv
+*.csv
 *.expect
 debug.log
 venmo_test.py
