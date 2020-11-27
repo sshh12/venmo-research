@@ -20,8 +20,8 @@ const userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 
 func RunNameSearchScraper(store *storage.Store, workers int) {
 	done := make(chan error)
 	for i := 0; i < workers; i++ {
-		go runBing(store, done)
-		go runDDG(store, done)
+		//go runBing(store, done)
+		//go runDDG(store, done)
 		go runPeekYou(store, done)
 	}
 	for err := range done {
