@@ -93,6 +93,45 @@ Use (with parameters adjusted for your postgres installation) to replicate the d
 $ pg_restore --host "127.0.0.1" --port "5432" --username "postgres" --no-password --dbname "venmo" --verbose "dataset.sql"
 ```
 
+#### Schema
+
+```
+{
+	'users':{
+		'created':'timestamp without time zone',
+		'bing_results':'json',
+		'facebook_results':'json',
+		'facebook_profile':'json',
+		'peek_you_results':'json',
+		'is_business':'boolean',
+		'cancelled':'boolean',
+		'id':'bigint',
+		'last_name':'character varying',
+		'username':'character varying',
+		'picture_url':'character varying',
+		'name':'character varying',
+		'ddg_results':'text',
+		'external_id':'character varying',
+		'first_name':'character varying'
+	},
+	'transactions':{
+		'created':'timestamp without time zone',
+		'updated':'timestamp without time zone',
+		'actor_user_id':'bigint',
+		'recipient_id':'bigint',
+		'id':'bigint',
+		'message':'character varying',
+		'story':'character varying',
+		'type':'character varying'
+	},
+	'user_to_transactions':{
+		'user_id':'bigint',
+		'transaction_id':'bigint',
+		'is_actor':'boolean'
+	}
+}
+```
+
 ## [TACC](https://www.tacc.utexas.edu/) Suggestions
 
 TACC can be a huge pain compared to any cloud provider but it can be useful as a free (for us at UT) compute resource. Personally, I only used it for jobs running with the `transactions` and `namesearch` mode. You can use [scripts/scrape.tacc.job](https://github.com/sshh12/venmo-research/blob/master/scripts/scrape.tacc.job) as a template for doing this. Keep in mind that you'll need to download and extract the [latest release](https://github.com/sshh12/venmo-research/releases), update the environment variables (see placeholders in the script), and run `$ sbatch scrape.tacc.job` while on a `stampede2.tacc.utexas.edu` login node.
